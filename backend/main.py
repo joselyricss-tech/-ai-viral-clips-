@@ -1,12 +1,23 @@
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from urllib.parse import urlparse
 
 app = FastAPI(
     title="AI Viral Clips API",
-    description="API inicial para analizar videos y transmisiones autorizadas.",
+    description="API para recibir enlaces de videos.",
     version="1.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://ai-viral-clips.vercel.app"
+    ],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 class AnalyzeRequest(BaseModel):
@@ -28,8 +39,14 @@ def analyze_video(request: AnalyzeRequest):
     if parsed.scheme not in ("http", "https"):
         raise HTTPException(status_code=400, detail="URL no válida")
 
-    if not parsed.netloc:
-        raise HTTPException(status_code=400, detail="URL no válida")
+    if parsed.hostname not in (
+        "youtube.com",
+        "www.youtube.com",
+        "m.youtube.com",
+        "youtu.be",
+        "www.youtube-nocookie.com",
+    ):
+        raise HTTPException(status_code=400, detail="Debe ser un enlace de YouTube")
 
     if request.video_type not in ("published", "live"):
         raise HTTPException(status_code=400, detail="Tipo de video no válido")
